@@ -141,100 +141,100 @@ if __name__=="__main__":
     # Train the model
     n.train_model(data_loader, num_epochs=100, learning_rate=0.01)"""
     import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-import numpy as np
+    import seaborn as sns
+    import matplotlib.pyplot as plt
+    import numpy as np
 
 
-df=pd.read_csv("merged.csv")
+    df=pd.read_csv("merged.csv")
 
-df_model = df[['Bin Level', 'traffic_light', 'Real Tons', 'Bond Work Index',
-       'Deep Work Index', 'feeder 1st Motor']]
+    df_model = df[['Bin Level', 'traffic_light', 'Real Tons', 'Bond Work Index',
+        'Deep Work Index', 'feeder 1st Motor']]
 
-mineral_columns = ['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']
-
-
-
-df = pd.concat([df_model, df[mineral_columns]], axis=1)
-columns_to_replace = ['Real Tons', 'Bond Work Index', 'Deep Work Index','feeder 1st Motor','Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']
-df[columns_to_replace] = df[columns_to_replace].mask(df[columns_to_replace] == 0).ffill()
+    mineral_columns = ['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']
 
 
-def remove_outliers_mean_based(df, deviation_factor=4.0):
-    for column in df.select_dtypes(include=[np.number]).columns:
-        mean = df[column].mean()
-        std_dev = df[column].std()
-        lower_bound = mean - deviation_factor * std_dev
-        upper_bound = mean + deviation_factor * std_dev
-        df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
-    return df
 
-# Define a function to remove outliers based on min-max range with a tolerance
-def remove_outliers_minmax_based(df, tolerance_factor=0.1):
-    for column in df.select_dtypes(include=[np.number]).columns:
-        min_value = df[column].min()
-        max_value = df[column].max()
-        range_tolerance = (max_value - min_value) * tolerance_factor
-        lower_bound = min_value - range_tolerance
-        upper_bound = max_value + range_tolerance
-        df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
-    return df
-
-# Choose the method: 'mean' or 'minmax'
-method = 'mean'  # Change to 'minmax' if you want to use the min-max based method
-
-deviation_factor = 4.0# For mean-based method  this threshold can be changed
-minmax_tolerance = 0.1  # For min-max based method #DONT USE 
-
-if method == 'mean':
-    cleaned_df = remove_outliers_mean_based(df, deviation_factor=deviation_factor)
-elif method == 'minmax':
-    cleaned_df = remove_outliers_minmax_based(df, tolerance_factor=minmax_tolerance)
-
-#print the new data frame 
-df= cleaned_df
-X = df[['traffic_light', 'Real Tons', 'Bond Work Index', 'Bin Level', 'Deep Work Index', 'feeder 1st Motor', 'Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
-
-y = df['Bin Level']
-
-import torch
+    df = pd.concat([df_model, df[mineral_columns]], axis=1)
+    columns_to_replace = ['Real Tons', 'Bond Work Index', 'Deep Work Index','feeder 1st Motor','Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']
+    df[columns_to_replace] = df[columns_to_replace].mask(df[columns_to_replace] == 0).ffill()
 
 
-X = df[['traffic_light', 'Real Tons',  'Bin Level',  'feeder 1st Motor', 'Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
+    def remove_outliers_mean_based(df, deviation_factor=4.0):
+        for column in df.select_dtypes(include=[np.number]).columns:
+            mean = df[column].mean()
+            std_dev = df[column].std()
+            lower_bound = mean - deviation_factor * std_dev
+            upper_bound = mean + deviation_factor * std_dev
+            df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+        return df
+
+    # Define a function to remove outliers based on min-max range with a tolerance
+    def remove_outliers_minmax_based(df, tolerance_factor=0.1):
+        for column in df.select_dtypes(include=[np.number]).columns:
+            min_value = df[column].min()
+            max_value = df[column].max()
+            range_tolerance = (max_value - min_value) * tolerance_factor
+            lower_bound = min_value - range_tolerance
+            upper_bound = max_value + range_tolerance
+            df = df[(df[column] >= lower_bound) & (df[column] <= upper_bound)]
+        return df
+
+    # Choose the method: 'mean' or 'minmax'
+    method = 'mean'  # Change to 'minmax' if you want to use the min-max based method
+
+    deviation_factor = 4.0# For mean-based method  this threshold can be changed
+    minmax_tolerance = 0.1  # For min-max based method #DONT USE 
+
+    if method == 'mean':
+        cleaned_df = remove_outliers_mean_based(df, deviation_factor=deviation_factor)
+    elif method == 'minmax':
+        cleaned_df = remove_outliers_minmax_based(df, tolerance_factor=minmax_tolerance)
+
+    #print the new data frame 
+    df= cleaned_df
+    X = df[['traffic_light', 'Real Tons', 'Bond Work Index', 'Bin Level', 'Deep Work Index', 'feeder 1st Motor', 'Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
+
+    y = df['Bin Level']
+
+    import torch
 
 
-minerals=X[['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
-real_tons=X[['Real Tons']]
-feeder=X[['feeder 1st Motor']]
-traffic_light=X[['traffic_light']]
-bin_level=X[['Bin Level']]
-
-minerals = torch.tensor(X[['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']].values)
-real_tons = torch.tensor(X[['Real Tons']].values)
-feeder = torch.tensor(X[['feeder 1st Motor']].values)
-traffic_light = torch.tensor(X[['traffic_light']].values)
-bin_level= torch.tensor(X[['Bin Level']].values)
-
-tensors_list = traffic_light,real_tons, minerals, bin_level, feeder 
-
-y = torch.tensor(df['Bin Level'].values, dtype=torch.float32)
-
-batch_size =32
-sequence_length=10
-mineral_size=10
-
-traffic, real_tons, minerals, bin_v, feeder_v= tensors_list
-# Create the dataset and DataLoader
-dataset = CustomDataset(traffic, real_tons, minerals, bin_v, feeder_v, y)
-data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    X = df[['traffic_light', 'Real Tons',  'Bin Level',  'feeder 1st Motor', 'Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
 
 
-# Create a dataset and DataLoader
-#dataset = TensorDataset(inputs, labels)
-data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+    minerals=X[['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
+    real_tons=X[['Real Tons']]
+    feeder=X[['feeder 1st Motor']]
+    traffic_light=X[['traffic_light']]
+    bin_level=X[['Bin Level']]
 
-# Instantiate the model
-n = Network(mineral_size=mineral_size, sequence_length=sequence_length, batch_size=batch_size)
+    minerals = torch.tensor(X[['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']].values)
+    real_tons = torch.tensor(X[['Real Tons']].values)
+    feeder = torch.tensor(X[['feeder 1st Motor']].values)
+    traffic_light = torch.tensor(X[['traffic_light']].values)
+    bin_level= torch.tensor(X[['Bin Level']].values)
 
-# Train the model
-n.train_model(data_loader, num_epochs=100, learning_rate=0.01)
+    tensors_list = traffic_light,real_tons, minerals, bin_level, feeder 
+
+    y = torch.tensor(df['Bin Level'].values, dtype=torch.float32)
+
+    batch_size =32
+    sequence_length=10
+    mineral_size=10
+
+    traffic, real_tons, minerals, bin_v, feeder_v= tensors_list
+    # Create the dataset and DataLoader
+    dataset = CustomDataset(traffic, real_tons, minerals, bin_v, feeder_v, y)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+
+    # Create a dataset and DataLoader
+    #dataset = TensorDataset(inputs, labels)
+    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
+
+    # Instantiate the model
+    n = Network(mineral_size=mineral_size, sequence_length=sequence_length, batch_size=batch_size)
+
+    # Train the model
+    n.train_model(data_loader, num_epochs=100, learning_rate=0.01)
