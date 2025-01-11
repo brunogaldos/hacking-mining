@@ -61,10 +61,10 @@ class Network(nn.Module):
         self.c = x
         x =x.unsqueeze(1)
         
-        ar_bin = self.p_ar_bin(bin_v.to(torch.float32))
-        ar_feed = self.p_ar_feed(feeder_v.to(torch.float32))
+        ar_bin = self.p_ar_bin(bin_v.to(torch.float32).squeeze(-1))
+        ar_feed = self.p_ar_feed(feeder_v.to(torch.float32).squeeze(-1))
 
-        ar_traffic = self.p_ar_traffic(traffic_light.to(torch.float32))
+        ar_traffic = self.p_ar_traffic(traffic_light.to(torch.float32).squeeze(-1))
 
         # Assuming ar_bin and ar_feed are of compatible shapes
         x = torch.cat([ar_traffic, ar_bin, ar_feed, x], dim=1)  # Concatenate along the last dimension
