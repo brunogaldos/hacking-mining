@@ -35,7 +35,6 @@ class CustomDataset(Dataset):
 
 
 
-
 class Network(nn.Module):
     def __init__(self, mineral_size, sequence_length, batch_size):
         super(Network, self).__init__()
@@ -43,31 +42,29 @@ class Network(nn.Module):
         self.sequence_length = sequence_length
         self.batch_size = batch_size
 
-        self.mineral_parameter = nn.Linear(mineral_size, 1)
-        self.p_ar_bin = nn.Linear(sequence_length, 2)
-        self.p_ar_feed = nn.Linear(sequence_length, 2)
-        self.p_ar_traffic = nn.Linear(sequence_length, 2)
+        self.mineral_parameter = nn.Linear(mineral_size, 1).to(torch.float32)
+        self.p_ar_bin = nn.Linear(sequence_length, 2).to(torch.float32)
+        self.p_ar_feed = nn.Linear(sequence_length, 2).to(torch.float32)
+        self.p_ar_traffic = nn.Linear(sequence_length, 2).to(torch.float32)
 
-        self.Linear_intermediate = nn.Linear(7, 1)
+        self.Linear_intermediate = nn.Linear(7, 1).to(torch.float32)
         self.nonlin = nn.Sigmoid()
         
         # Proper initialization with requires_grad handling
         self.c = torch.ones((self.batch_size,), requires_grad=True)  # Replace 'cpu' with 'cuda' if using GPU
-        #self.p = torch.tensor(0.5, requires_grad=True,)  # Replace 'cpu' with 'cuda' if using GPU
 
     def forward(self, inputs):
         traffic_light , real_tons, minerals, bin_v, feeder_v = inputs
-
-        p = self.mineral_parameter(minerals)
+        p = self.mineral_parameter(minerals.to(torch.float32))
 
         x = self.c * (0.9 ** p).squeeze(1) + real_tons
         self.c = x
         x =x.unsqueeze(1)
         
-        ar_bin = self.p_ar_bin(bin_v)
-        ar_feed = self.p_ar_feed(feeder_v)
+        ar_bin = self.p_ar_bin(bin_v.to(torch.float32))
+        ar_feed = self.p_ar_feed(feeder_v.to(torch.float32))
 
-        ar_traffic = self.p_ar_traffic(traffic_light)
+        ar_traffic = self.p_ar_traffic(traffic_light.to(torch.float32))
 
         # Assuming ar_bin and ar_feed are of compatible shapes
         x = torch.cat([ar_traffic, ar_bin, ar_feed, x], dim=1)  # Concatenate along the last dimension
@@ -197,17 +194,14 @@ if __name__=="__main__":
 
     y = df['Bin Level']
 
-    import torch
-
-
     X = df[['traffic_light', 'Real Tons',  'Bin Level',  'feeder 1st Motor', 'Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
-
 
     minerals=X[['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']]
     real_tons=X[['Real Tons']]
     feeder=X[['feeder 1st Motor']]
     traffic_light=X[['traffic_light']]
     bin_level=X[['Bin Level']]
+
 
     minerals = torch.tensor(X[['Copper Grade', 'Py', 'Iron', 'Arsenic', 'Mo', 'Kao', 'Piro', 'Bn', 'Mus', 'Sulfide']].values)
     real_tons = torch.tensor(X[['Real Tons']].values)
@@ -218,19 +212,34 @@ if __name__=="__main__":
     tensors_list = traffic_light,real_tons, minerals, bin_level, feeder 
 
     y = torch.tensor(df['Bin Level'].values, dtype=torch.float32)
-
+   
     batch_size =32
-    sequence_length=10
+    sequence_length=40
     mineral_size=10
 
-    traffic, real_tons, minerals, bin_v, feeder_v= tensors_list
+    minerals_v = []
+    real_tons_v = []
+    feeder_v = []
+    traffic_light_v =[]
+    bin_level_v = []
+    y_v = []
+    for i in range(sequence_length, minerals.shape[0]-1):
+        minerals_v.append(minerals[i].unsqueeze(0))
+        real_tons_v.append(real_tons[i])
+        feeder_v.append(feeder[i-sequence_length:i,:].unsqueeze(0))
+        traffic_light_v.append(traffic_light[i-sequence_length:i,:].unsqueeze(0))
+        bin_level_v.append(bin_level[i-sequence_length:i, :].unsqueeze(0))
+        y_v.append(bin_level[i+1])
+    
+    minerals =torch.cat(minerals_v, dim=0)
+    real_tons = torch.cat(real_tons_v, dim=0)
+    feeder = torch.cat(feeder_v, dim=0)
+    traffic = torch.cat(traffic_light_v, dim=0)
+    bin_level = torch.cat(bin_level_v, dim=0)
+    y = torch.cat(y_v, dim=0)
+
     # Create the dataset and DataLoader
-    dataset = CustomDataset(traffic, real_tons, minerals, bin_v, feeder_v, y)
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-
-    # Create a dataset and DataLoader
-    #dataset = TensorDataset(inputs, labels)
+    dataset = CustomDataset(traffic, real_tons, minerals, bin_level, feeder, y)
     data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
     # Instantiate the model
