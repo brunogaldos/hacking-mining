@@ -68,7 +68,7 @@ class Network(nn.Module):
 
         # Assuming ar_bin and ar_feed are of compatible shapes
         x = torch.cat([ar_traffic, ar_bin, ar_feed, x], dim=1)  # Concatenate along the last dimension
-        x= self.Linear_intermediate(x)
+        x= self.Linear_intermediate(x.to(torch.float32))
         x = self.nonlin(x)
 
         return x
@@ -91,10 +91,10 @@ class Network(nn.Module):
                 optimizer.zero_grad()
 
                 # Forward pass
-                outputs = self(inputs)
+                outputs = self(inputs).to(torch.float32)
 
                 # Calculate loss
-                loss = criterion(outputs, labels)
+                loss = criterion(outputs.squeeze(-1), labels.to(torch.float32)).to(torch.float32)
 
                 # Backward pass (compute gradients)
                 loss.backward(retain_graph=True)
