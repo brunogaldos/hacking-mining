@@ -48,7 +48,7 @@ class Network(nn.Module):
         self.p_ar_traffic = nn.Linear(sequence_length, 2).to(torch.float32)
 
         self.Linear_intermediate = nn.Linear(7, 1).to(torch.float32)
-        self.nonlin = nn.Sigmoid()
+        self.nonlin = nn.Tanh()
         
         # Proper initialization with requires_grad handling
         self.c = torch.ones((self.batch_size,), requires_grad=True)  # Replace 'cpu' with 'cuda' if using GPU
@@ -57,9 +57,7 @@ class Network(nn.Module):
         traffic_light , real_tons, minerals, bin_v, feeder_v = inputs
         p = self.mineral_parameter(minerals.to(torch.float32))
 
-        x = self.c * (0.9 ** p).squeeze(1) + real_tons
-        self.c = x
-        x =x.unsqueeze(1)
+        self.c = self.c * (1.1 + p).squeeze(1) + real_tons
         
         ar_bin = self.p_ar_bin(bin_v.to(torch.float32).squeeze(-1))
         ar_feed = self.p_ar_feed(feeder_v.to(torch.float32).squeeze(-1))
@@ -67,7 +65,9 @@ class Network(nn.Module):
         ar_traffic = self.p_ar_traffic(traffic_light.to(torch.float32).squeeze(-1))
 
         # Assuming ar_bin and ar_feed are of compatible shapes
-        x = torch.cat([ar_traffic, ar_bin, ar_feed, x], dim=1)  # Concatenate along the last dimension
+        x = torch.cat([ar_traffic, ar_bin, ar_feed, self.c.unsqueeze(1)], dim=1)  # Concatenate along the last dimension
+        
+        
         x= self.Linear_intermediate(x.to(torch.float32))
         x = self.nonlin(x)
 
@@ -103,40 +103,16 @@ class Network(nn.Module):
                 optimizer.step()
 
                 # Print statistics
-                running_loss += loss.item()
+                running_loss = loss.item()
 
-            # Print the average loss for this epoch
-            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss / len(data_loader)}")
+                # Print the average loss for this epoch
+                print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {running_loss }")
 
 if __name__=="__main__":
 
     sequence_length = 40
     mineral_size =10
-    batch_size=32
-    """
-    # Example usage
-    # Replace these with your actual data
-    num_samples = 32*5
-    real_tons = torch.randn(num_samples)  # 1D tensor of shape (num_samples,)
-    minerals = torch.randn(num_samples, mineral_size)  # 2D tensor of shape (num_samples, 10)
-    bin_v = torch.randn(num_samples, sequence_length)  # 2D tensor of shape (num_samples, 5)
-    feeder_v = torch.randn(num_samples, sequence_length)  # 2D tensor of shape (num_samples, 3)
-    labels = torch.randn(num_samples, 1)  # 2D tensor of shape (num_samples, 1)
-
-    # Create the dataset and DataLoader
-    dataset = CustomDataset(real_tons, minerals, bin_v, feeder_v, labels)
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-
-    # Create a dataset and DataLoader
-    #dataset = TensorDataset(inputs, labels)
-    data_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-
-    # Instantiate the model
-    n = Network(mineral_size=mineral_size, sequence_length=sequence_length, batch_size=batch_size)
-
-    # Train the model
-    n.train_model(data_loader, num_epochs=100, learning_rate=0.01)"""
+    batch_size=100
     import pandas as pd
     import seaborn as sns
     import matplotlib.pyplot as plt
@@ -213,7 +189,7 @@ if __name__=="__main__":
 
     y = torch.tensor(df['Bin Level'].values, dtype=torch.float32)
    
-    batch_size =32
+    batch_size =100
     sequence_length=40
     mineral_size=10
 
@@ -223,7 +199,7 @@ if __name__=="__main__":
     traffic_light_v =[]
     bin_level_v = []
     y_v = []
-    for i in range(sequence_length, minerals.shape[0]-1):
+    for i in range(sequence_length, 100000+sequence_length):
         minerals_v.append(minerals[i].unsqueeze(0))
         real_tons_v.append(real_tons[i])
         feeder_v.append(feeder[i-sequence_length:i,:].unsqueeze(0))
