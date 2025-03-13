@@ -8,6 +8,7 @@ import torch.optim as optim
 def load(file_name):
     # Load the CSV file into a DataFrame
     df = pd.read_csv(file_name)  
+    #df = pd.read_parquet(file_name) # for parquet file
     return df 
 
 def split_dataframe_on_traffic_light_change(df):
@@ -119,6 +120,7 @@ def train_and_evaluate_model(model, X_train, X_control_train, bin_level_inputs_t
 if __name__ == "__main__": 
 
     first_rows, control_inputs, Bin_level_inputs, outputs = load_data('merged.csv')
+    #first_rows, control_inputs, Bin_level_inputs, outputs = load_data('export_1740063344367.parquet')
     X_train, X_test = create_train_test(first_rows)
     X_control_train, X_control_test = create_train_test(control_inputs)
     y_train,y_test = create_train_test(outputs)

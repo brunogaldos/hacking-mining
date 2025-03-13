@@ -3,6 +3,10 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from CustomNN_REN import CustomNN
 
+
+# this is for printing the plot 
+
+
 def create_train_test(tensor_list):
     #split_index = 100
     split_index = int(len(tensor_list) * 0.05)
@@ -14,6 +18,7 @@ def create_train_test(tensor_list):
 def load(file_name):
     # Load the CSV file into a DataFrame
     df = pd.read_csv(file_name)
+    #df = pd.read_parquet(file_name)
     return df
 
 def load_data(filename):
@@ -30,6 +35,7 @@ def load_data(filename):
     return first_rows, control_inputs, Bin_level_input, outputs
 
 # Load data
+#first_rows, control_inputs, Bin_level_inputs, outputs = load_data('export_1740063344367.parquet')
 first_rows, control_inputs, Bin_level_inputs, outputs = load_data('merged.csv')
 X_train, X_test = create_train_test(first_rows)
 X_control_train, X_control_test = create_train_test(control_inputs)
@@ -37,6 +43,7 @@ y_train, y_test = create_train_test(outputs)
 Bin_level_inputs_train, Bin_level_inputs_test = create_train_test(Bin_level_inputs)
 
 # Load model from a specified path
+
 model_path = 'good_models/model_epoch_1.pth'
 model = CustomNN(3, 2, 2, 10, 100)
 model.load_state_dict(torch.load(model_path))
